@@ -6,7 +6,7 @@ DESCRIPTION
 	the live appends similar to `tail -f` and allow you to `type stuff [enter]'
 	and append to the file.
 
-	This program is designed to be a client for my chat application `ch` but it
+	This program is designed to be a client for my chat program `ch` but it
 	can also work with any other file-based message program - such as suckless ii.
 
 SYNOPSIS
