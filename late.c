@@ -12,6 +12,34 @@
 */
 
 #include <stdio.h>
-#include <stdlib.h> // for exit()
+#include <string.h>
+
+void follow(char filename[]) {
+	char letter;
+	FILE *fptr;
+
+	fptr = fopen(filename, "a+");
+	
+	while(1) {
+
+		letter = fgetc(fptr);
+
+		if(strcmp(line, next_line) != 0) {
+			putchar("f");
+			fptr++
+		}	
+		
+	}
+
+	fclose(fptr);
+}
+
+int main(int argc, char* argv[]) {
+
+	/* write(); */	
+	follow(argv[0]);
+
+	return 0;
+}
 
 
