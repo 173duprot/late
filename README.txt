@@ -14,5 +14,5 @@ SYNOPSIS
 
 EXAMPLES
 	ch: late ./chat.txt ./chat.txt	// reads from chad.txt and writes to chat.txt
-	ii: late ./out ./in		// reads from the out file and writes to the
+	ii: late ./out      ./in	// reads from the out file and writes to the
 					   in file
