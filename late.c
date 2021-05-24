@@ -1,15 +1,17 @@
 #include <stdio.h>
-#include <fcntl.h> /* open() */
-#include <unistd.h> 
+#include <fcntl.h>		/* open() */
+#include <unistd.h>		/* read(), write() etc... */
 
-#include <termios.h>
-#include <sys/poll.h>
+#include <termios.h>		/* Terminal control */
+#include <sys/poll.h>		/* Watch file descriptors FD  for changes */
+#include <sys/inotify.h>	/* Watch files for changes as a FD steam */
 
 #define STDIN_FILENO    0       /* Standard input.  */
 #define STDOUT_FILENO   1       /* Standard output.  */
 #define STDERR_FILENO   2       /* Standard error output.  */
 
-#define	READ_ONLY	0	/* Custom thing for the open() function */
+#define	READ		0	/* Custom thing for the open() function */
+#define WRITE		1	/* Custom thing for the open() function */
 
 /* tc- means terminal control, it will turn off terminal echoing */
 /* relies on termios.h */
@@ -18,7 +20,7 @@ void echo_off()
 	struct termios t;
 	tcgetattr(STDIN_FILENO, &t);
 
-	/* ICANON turns off line by line input */
+	/* ICANON turns off line by line input, only 1 char at a time is taken */
 	/* ECHO turns off echoing what you type */
 	t.c_lflag &= ~(ECHO | ICANON);
 	tcsetattr(STDIN_FILENO, TCSANOW, &t);
@@ -26,10 +28,13 @@ void echo_off()
 
 int main(int argc, char *argv[])
 {
+	/* Init for poll */
+	struct pollfd pfds[2];
+
 	/*VAR buffer -- buffer for reading from files/stdin*/
-		/* These VARS are used to temporarily, and by multiple things */
+		/* This VAR is used to temporarily, and by multiple things */
 		/* read, print, then close for the next use of it */
-	char buffer[1024];
+	char buffer;
 	int buffer_size;
 	
 	/*  A file descriptor is a number that uniquely identifies an open file */
@@ -37,10 +42,12 @@ int main(int argc, char *argv[])
 
 	/*VAR fd_ -- file descriptor - 0,1,2 reserved for stdin, stdout, stderr */
 	int fd_stdin = STDIN_FILENO;
-	int fd_file = open(argv[1], READ_ONLY);
+	int fd_stdout = STDOUT_FILENO;
 	
-	struct pollfd pfds[2];
-
+	/* init for inotify */
+	int fd_file = inotify_init(); 
+	inotify_add_watch(fd_file, argv[1], IN_MODIFY);
+	
 	echo_off();
 	
 	while (1)
@@ -59,39 +66,35 @@ int main(int argc, char *argv[])
 			/* -1 means wait forever */
 		poll(pfds, 2, -1); 		
 
-	/* If STDIN has new stuff to read */
+	/* If STDIN has new character to read */
 		if (pfds[0].revents & POLLIN)
 		{
-		/* Read input */
-			/* read(); returns its length */
-				/* read takes raw ascii input thats *not* \0 terminated */
-			buffer_size = read(fd_stdin, buffer, sizeof(buffer));
+		/* Read char from input */
+			/* Buffer is a char, the size is 1 */
+			read(fd_stdin, &buffer, 1);
 			
-			/* go to the end of the buffer and \0 terminate it */
-			buffer[buffer_size] = '\0';
-
 		/* Print input */
-			puts(buffer);
-			/* Null terminate the buffer at the beggining, deleting the string */
-			buffer[0] = '\0';
+			write(fd_stdout, &buffer, 1);
 		}
 	
 	/* If the file has new stuff to read */
 		if (pfds[1].revents & POLLIN)
 		{
-		/* Read file */
-			/* read(); returns its length */
-				/* read takes raw ascii input thats *not* \0 terminated */
-			buffer_size = read(fd_file, buffer, 1024);
-			
-			/* go to the end of the buffer and \0 terminate it */
-			buffer[buffer_size] = '\0';
+			/* Go through ever letter in the file */
+		/*	while ( (buffer_size = read(fd_file, &buffer, 1)) > 0)
+				{
+					/* Read char from file */
+		/*			read(fd_file, &buffer, 1);
+				
+					/* Print file */
+		/*			write(fd_stdout, &buffer, 1);
+				} */
+		
+		/* Read char from file */
+		read(fd_file, &buffer, 1);
 		
 		/* Print file */
-			puts(buffer);
-			/* Null terminate the buffer at the beggining, deleting the string */
-			buffer[0] = '\0';
-			
+		write(fd_stdout, &buffer, 1);
 		}
 	}
 }
